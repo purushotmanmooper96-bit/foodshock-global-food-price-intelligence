@@ -33,7 +33,9 @@ The project contains 2,568 commodity-month observations from January 2000 throug
 4. Open **foodshock.sqlite** in a SQLite browser, or use Python's built-in sqlite3. Inspect the SQL views and queries in sql/analysis.sql.
 5. Follow **powerbi/BUILD_GUIDE.md** to assemble the Power BI version using the supplied Power Query, DAX, theme and report-page specification.
 
-**Delivery boundary:** the HTML dashboard is implemented and its JavaScript interactions are tested. Browser screenshot/render testing could not be completed because a browser binary was unavailable. Excel was rendered and inspected. Power BI Desktop is unavailable in this environment; Power BI assets are a build kit, not an executed/tested .pbix.
+**Validation:** the Python rebuild and 10 regression tests pass on Windows and Linux. Chromium desktop/mobile smoke checks cover navigation, scenario validation, a real CSV download, page errors and mobile overflow. See the [verified workflow run](https://github.com/purushotmanmooper96-bit/foodshock-global-food-price-intelligence/actions/runs/39495977933) and [validation evidence](docs/VALIDATION.md).
+
+**Delivery boundary:** Power BI assets are a build kit, not a completed .pbix. The Excel file is a snapshot with documented manual refresh steps. Browser smoke checks do not establish pixel-perfect appearance or every-browser compatibility.
 
 ## Tool responsibilities
 
@@ -116,4 +118,4 @@ Once the Desktop report is assembled and validated, change the Power BI wording 
 
 ## Audit validation
 
-The October 2026 review independently reconciled all 2,568 observations and passed expanded JavaScript DOM logic checks. A cross-platform validation workflow is supplied for Python rebuilds and tests. Do not treat the presence of that workflow as proof of a successful run; inspect its actual result. See [audit findings](docs/AUDIT_AND_FIXES.md) for unresolved boundaries.
+The October 2026 review independently reconciled all 2,568 observations and executed expanded JavaScript logic checks, the Windows/Linux Python test matrix and Chromium desktop/mobile smoke checks. [Inspect the verified run](https://github.com/purushotmanmooper96-bit/foodshock-global-food-price-intelligence/actions/runs/39495977933); its tested code is commit 0beebc0056f81050d975ec219f40f49b502d937c. See [audit findings](docs/AUDIT_AND_FIXES.md) for remaining boundaries.
