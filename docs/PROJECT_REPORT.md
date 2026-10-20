@@ -133,3 +133,7 @@ Checks enforce unique fact keys, complete monthly calendars, positive selected p
 - Power BI references and acceptance instructions: powerbi/BUILD_GUIDE.md
 
 All numerical findings and model scores in this report are computed from this project's included snapshot and output files. The proposals are analytical recommendations for investigation, not observed outcomes.
+
+## Follow-up review
+
+See [AUDIT_AND_FIXES.md](AUDIT_AND_FIXES.md) for code-level findings, fixes, independent numerical reconciliation and current validation boundaries. Existing numerical snapshots and model winners are unchanged. Selection and uncertainty calibration reuse the validation block, so intervals are exploratory rather than a formal out-of-sample coverage guarantee. Source metadata now ties provenance dates to the verified workbook hash and update label. See [LAUNCH_CONTENT.md](LAUNCH_CONTENT.md) for shareable explanations that retain these limits.

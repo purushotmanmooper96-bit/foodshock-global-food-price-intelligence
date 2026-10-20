@@ -20,3 +20,7 @@ Completed 21 October 2026.
 ## Refresh controls
 
 Archive the old source, verify update date and schema, run the pipeline and tests, review changed historical values and model winners, refresh Power BI and update the Excel snapshot as documented. Do not overwrite a past evaluation claim with a newly tuned model while reusing the same test period as independent evidence.
+
+## Follow-up audit: 21 October 2026
+
+The updated JavaScript source passed expanded logic checks in an isolated JavaScript runtime. All 2,568 records independently reconciled for conversion, MoM, YoY, index rebasing and shock z-scores (maximum absolute difference below 1e-9). Python guards, UTF-8 handling and provenance validation were revised; the local Python environment was unavailable for this follow-up, so these changes are not covered by the earlier six-test pass. Ten Python test methods and a Linux/Windows GitHub Actions definition are now supplied. Workflow results, when available, are the execution evidence. Browser rendering and Power BI Desktop acceptance remain unexecuted. See AUDIT_AND_FIXES.md for detail.

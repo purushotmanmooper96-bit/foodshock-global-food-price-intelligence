@@ -1,12 +1,11 @@
 """Rebuild FOODSHOCK from the included World Bank snapshot. Python 3.11+."""
 from pathlib import Path
-import hashlib, json, sqlite3, sys
+import hashlib, json, sqlite3
 import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'data/processed'
-URL = 'https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx'
 MAPPING = {
     'Wheat, US HRW': ('Wheat', 'Grains', 1),
     'Maize': ('Maize', 'Grains', 1),
@@ -23,6 +22,14 @@ def features(a, t):
     return np.array([a[t-1], a[t-2], a[t-3], a[t-12], a[t-3:t].mean(), a[t-12:t].mean()])
 
 def predict(a, t, model):
+    if model not in ('Last price', 'Seasonal naive', 'Ridge lags'):
+        raise ValueError(f'Unknown model: {model}')
+    a = np.asarray(a, dtype=float)
+    minimum = {'Last price': 1, 'Seasonal naive': 12, 'Ridge lags': 24}[model]
+    if a.ndim != 1 or not isinstance(t, (int, np.integer)) or not minimum <= t <= len(a):
+        raise ValueError('Invalid forecast origin or insufficient training history')
+    if not np.isfinite(a[:t]).all():
+        raise ValueError('Training prices must be finite')
     if model == 'Last price':
         return float(a[t-1])
     if model == 'Seasonal naive':
@@ -41,9 +48,30 @@ def predict(a, t, model):
 
 def scenario(spend, shock, fx, passed):
     """Illustrative local-currency spend, constant quantities and immediate pass-through."""
+    values = np.asarray([spend, shock, fx, passed], dtype=float)
+    if not np.isfinite(values).all():
+        raise ValueError('Scenario inputs must be finite')
+    spend, shock, fx, passed = values
     if spend < 0 or shock <= -1 or fx <= -1 or not 0 <= passed <= 1:
         raise ValueError('Invalid scenario assumptions')
-    return spend * (1 + shock*passed) * (1 + fx)
+    with np.errstate(over='ignore', invalid='ignore'):
+        result = spend * (1 + shock*passed) * (1 + fx)
+    if not np.isfinite(result):
+        raise ValueError('Scenario exceeds the supported numeric range')
+    return float(result)
+
+def source_metadata():
+    """Provenance stays tied to source bytes; a rerun is not a new retrieval."""
+    snapshot = ROOT/'data/raw/worldbank_monthly.xlsx'
+    metadata = json.loads((ROOT/'data/raw/source_metadata.json').read_text(encoding='utf-8'))
+    digest = hashlib.sha256(snapshot.read_bytes()).hexdigest()
+    if metadata['snapshot_sha256'] != digest:
+        raise ValueError('Source changed: verify it and update data/raw/source_metadata.json before rebuilding')
+    for field in ('retrieved_on', 'source_updated'):
+        pd.to_datetime(metadata[field], format='%Y-%m-%d', errors='raise')
+    if metadata['retrieved_on'] < metadata['source_updated']:
+        raise ValueError('Retrieval date cannot precede the source update')
+    return metadata
 
 def load_prices():
     raw = pd.read_excel(ROOT/'data/raw/worldbank_monthly.xlsx', sheet_name='Monthly Prices', header=None)
@@ -54,6 +82,8 @@ def load_prices():
     dates = pd.to_datetime(data.iloc[:,0], format='%YM%m')
     rows = []
     for source, (name, category, factor) in MAPPING.items():
+        if names.count(source) != 1:
+            raise ValueError(f'Expected exactly one source column: {source}')
         pos = names.index(source)
         source_unit = str(raw.iloc[5,pos])
         expected = '$/kg' if factor == 1000 else '$/mt'
@@ -68,22 +98,36 @@ def load_prices():
     df = pd.DataFrame(rows, columns=['date','commodity','category','source_series','source_unit','source_price','conversion_factor','price_usd_mt'])
     if df.duplicated(['date','commodity']).any():
         raise ValueError('Duplicate keys')
-    if df.price_usd_mt.isna().any() or (df.price_usd_mt <= 0).any():
+    if not np.isfinite(df.price_usd_mt).all() or (df.price_usd_mt <= 0).any():
         raise ValueError('Missing/nonpositive selected prices: do not silently impute')
     df = df.sort_values(['commodity','date']).reset_index(drop=True)
     for _, g in df.groupby('commodity'):
         expected_dates = pd.date_range(g.date.min(),g.date.max(),freq='MS')
-        if len(g) != len(expected_dates):
+        if list(g.date) != list(expected_dates.strftime('%Y-%m-%d')):
             raise ValueError('Incomplete monthly calendar')
+        if len(g) < 84:
+            raise ValueError('Need at least 84 monthly prices for validation, test and training history')
+        if g.date.str.startswith('2020').sum() != 12:
+            raise ValueError('The 2020 index needs all 12 baseline months')
+    if df.groupby('commodity').date.agg(['min','max']).nunique().max() != 1:
+        raise ValueError('Commodity calendars must have the same start and end')
+    df.attrs['source_updated'] = pd.to_datetime(str(raw.iloc[3,0]).removeprefix('Updated on ').strip()).strftime('%Y-%m-%d')
     return df
+
+def shock_scores(returns):
+    history = returns.shift(1).rolling(36)
+    return (returns-history.mean())/history.std().replace(0, np.nan)
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
+    provenance = source_metadata()
     df = load_prices()
+    if provenance['source_updated'] != df.attrs['source_updated']:
+        raise ValueError('Source update date disagrees with the workbook header')
     df['mom'] = df.groupby('commodity').price_usd_mt.pct_change(fill_method=None)
     df['yoy'] = df.groupby('commodity').price_usd_mt.pct_change(12,fill_method=None)
     df['log_return'] = df.groupby('commodity').price_usd_mt.transform(lambda s: np.log(s).diff())
-    df['shock_z'] = df.groupby('commodity').log_return.transform(lambda s: (s-s.shift(1).rolling(36).mean())/s.shift(1).rolling(36).std())
+    df['shock_z'] = df.groupby('commodity').log_return.transform(shock_scores)
     df['volatility_12m'] = df.groupby('commodity').log_return.transform(lambda s:s.rolling(12).std()*np.sqrt(12))
     df['index_2020'] = df.groupby('commodity').price_usd_mt.transform(lambda s:100*s/s[df.loc[s.index,'date'].str.startswith('2020')].mean())
     df['alert'] = np.where(df.shock_z >= 2,'Upward shock',np.where(df.shock_z <= -2,'Downward shock','Normal'))
@@ -123,21 +167,21 @@ def main():
         frame.to_csv(OUT/f'{name}.csv',index=False)
     with sqlite3.connect(ROOT/'foodshock.sqlite') as con:
         for name, frame in frames.items(): frame.to_sql(name,con,if_exists='replace',index=False)
-        con.executescript((ROOT/'sql/analysis.sql').read_text())
+        con.executescript((ROOT/'sql/analysis.sql').read_text(encoding='utf-8'))
         sql_latest=pd.read_sql('SELECT * FROM vw_latest',con)
-        assert len(sql_latest)==len(latest)
-        assert np.allclose(sql_latest.sort_values('commodity').yoy,latest.sort_values('commodity').yoy)
-    manifest=dict(source_url=URL,source_sheet='Monthly Prices',snapshot_sha256=hashlib.sha256((ROOT/'data/raw/worldbank_monthly.xlsx').read_bytes()).hexdigest(),
-        retrieved_on='2026-10-21',source_updated='2026-10-02',start=df.date.min(),end=df.date.max(),rows=len(df),commodities=len(dim),
+        if len(sql_latest) != len(latest) or not np.allclose(sql_latest.sort_values('commodity').yoy,latest.sort_values('commodity').yoy):
+            raise ValueError('SQL/Python latest-month reconciliation failed')
+    manifest=dict(source_url=provenance['source_url'],source_sheet='Monthly Prices',snapshot_sha256=provenance['snapshot_sha256'],
+        retrieved_on=provenance['retrieved_on'],source_updated=provenance['source_updated'],start=df.date.min(),end=df.date.max(),rows=len(df),commodities=len(dim),
         missing_selected_prices=int(df.price_usd_mt.isna().sum()),duplicates=int(df.duplicated(['date','commodity']).sum()),
         source_note='Workbook contains ancillary Mismatch Details. Analysis uses Monthly Prices only; original snapshot preserved. No claim of independent price verification.')
-    (OUT/'manifest.json').write_text(json.dumps(manifest,indent=2))
+    (OUT/'manifest.json').write_text(json.dumps(manifest,indent=2), encoding='utf-8')
     clean=lambda f:json.loads(f.to_json(orient='records'))
     payload={k:clean(v) for k,v in frames.items()}
     payload['manifest']=manifest
-    (OUT/'dashboard_data.json').write_text(json.dumps(payload,allow_nan=False))
-    template=(ROOT/'python/dashboard_template.html').read_text()
-    (ROOT/'FOODSHOCK_Dashboard.html').write_text(template.replace('__DATA__',json.dumps(payload,allow_nan=False)))
+    (OUT/'dashboard_data.json').write_text(json.dumps(payload,allow_nan=False), encoding='utf-8')
+    template=(ROOT/'python/dashboard_template.html').read_text(encoding='utf-8')
+    (ROOT/'FOODSHOCK_Dashboard.html').write_text(template.replace('__DATA__',json.dumps(payload,allow_nan=False).replace('<', '\\u003c')), encoding='utf-8')
     print(json.dumps(manifest,indent=2))
     print(latest[['commodity','price_usd_mt','yoy','shock_z']].to_string(index=False))
     print(pd.DataFrame(metrics).query('selected==1')[['commodity','model','test_mape','test_interval_coverage']].to_string(index=False))
