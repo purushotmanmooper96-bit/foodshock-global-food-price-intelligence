@@ -1,22 +1,38 @@
 # Validation evidence
 
-Completed 21 October 2026.
+Review completed 21 October 2026.
 
-## Executed
+[Verified GitHub Actions run](https://github.com/purushotmanmooper96-bit/foodshock-global-food-price-intelligence/actions/runs/39495977933)  
+Tested code commit: 0beebc0056f81050d975ec219f40f49b502d937c  
+Pull request: https://github.com/purushotmanmooper96-bit/foodshock-global-food-price-intelligence/pull/1
 
-- Python 3.12.14: complete pipeline executed against the preserved World Bank snapshot.
-- Six unittest cases passed: unit conversion/calendar size; SQL/Python MoM and YoY reconciliation across all 2,568 records; prediction invariance when current/future prices are altered; separate validation/test chronology and model selection; interval ordering and missing-history behavior; known-value scenario and invalid-input guard.
-- Dependency-free Node.js interaction checks passed: eight commodity selections × three history windows; populated finite chart/table output; four navigation controls; known-value FX sensitivity; negative-budget input; selected-history CSV creation.
-- Excel authored with native formulas, validation rules and two native editable charts. Workbook recalculated, key ranges inspected, Wheat YoY reconciled to Python and FX sensitivity changed/restored successfully. Overview rendered and visually reviewed. Chart labels adjusted for readability. Exported workbook inspected for formula-error values and chart references.
-- Included database's SQL views executed successfully. Selected-model comparison exposes the actual baseline improvements and regressions.
+## Executed audit checks
 
-## Not executed here
+| Check | Result and scope |
+|---|---|
+| Independent numerical reconciliation | All 2,568 records reconciled for unit conversion, MoM, YoY, 2020 index and shock z-score; maximum absolute difference below 1e-9 |
+| Python rebuild, Ubuntu | Passed against the preserved source snapshot with provenance validation |
+| Python rebuild, Windows | Passed with PYTHONUTF8=0, exercising explicit text encodings |
+| Python regression suite | 10 tests passed on each platform, including finite/range/overflow guards, source metadata, zero-variance shock behavior, model origins, split chronology and SQL reconciliation |
+| JavaScript DOM checks | Passed on both platforms; eight commodities × three history windows, page visibility, contextual controls, valid/invalid budgets, missing chart values and CSV construction/cleanup |
+| Real Chromium desktop | Passed at 1440 × 1100: benchmark selection, all four pages, scenario input handling, a real quoted UTF-8 CSV download and zero page errors |
+| Real Chromium mobile | Passed at 390 × 844: controls visible and no whole-page horizontal overflow |
+| Captures | Desktop overview, forecast and scenario plus mobile overview saved in workflow artifacts; artifacts expire according to the workflow retention period |
 
-- Native browser rendering/responsive-layout/real download acceptance. A browser binary could not be installed in this environment. JavaScript tests use a lightweight DOM stub, so they do not prove CSS appearance or browser download behavior. Open the delivered HTML and inspect each page at desktop/mobile widths before publishing screenshots.
-- Power BI Desktop import, DAX execution, visual interactions or .pbix generation. The Desktop guide includes expected values for acceptance. No tested Power BI report is claimed.
-- Excel desktop application acceptance. The workbook was calculated, rendered and exported with the artifact engine; check it in your installed Excel before presenting it. Native feature definitions are included.
-- Live source refresh or an operational deployment. All models run on the included snapshot. No external user accounts, company systems or paid APIs are involved.
+## Original Excel checks
+
+The unchanged Excel workbook was authored with 267 formulas and two native editable charts. The original build recalculated it, reconciled Wheat YoY to Python, tested and restored FX sensitivity, rendered the overview, inspected chart references and found no exported formula-error cells. It was not opened in desktop Excel during this audit.
+
+## Limits of the checks
+
+- Browser smoke tests verify concrete interactions and a specified viewport; they do not prove pixel-perfect design, accessibility conformance, every browser or every device.
+- No Power BI Desktop execution or finished .pbix is claimed.
+- Excel remains a snapshot with a documented manual refresh process.
+- Numerical output snapshots and model winners were preserved. This audit does not establish predictive superiority or future uncertainty coverage.
+- The source workbook's ancillary Mismatch Details sheet was not independently reconciled.
+- Code/runtime dependencies use version ranges and CI action major-version references; this is not a fully locked reproducibility environment.
+- No live data refresh, realized procurement savings, social-media publication or production deployment is claimed.
 
 ## Refresh controls
 
-Archive the old source, verify update date and schema, run the pipeline and tests, review changed historical values and model winners, refresh Power BI and update the Excel snapshot as documented. Do not overwrite a past evaluation claim with a newly tuned model while reusing the same test period as independent evidence.
+Archive the old source, verify its update label and units, update source_metadata.json with the new hash and retrieval evidence, then run the pipeline and tests. Review revised history/model winners, refresh Power BI and update the Excel snapshot as documented. Keep evaluation periods independent of future tuning decisions.

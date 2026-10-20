@@ -1,11 +1,17 @@
 # FOODSHOCK
 ## Global Food Price Risk and Procurement Intelligence
 
+**Cocoa fell 15.8% year on year, yet remained 149.7% above its 2020 average.** Explore the price direction, historical level and procurement implications behind that contrast.
+
+![Cocoa price direction and historical level, World Bank September 2026 snapshot](docs/social-card.svg)
+
 **Problem:** international food benchmark shocks can make procurement budgets unstable. Buyers need to distinguish sustained price pressure, sudden changes and uncertainty before reviewing sourcing commitments.
 
 **Solution:** an auditable analytics workflow that monitors eight food benchmarks, flags unusual monthly changes, evaluates next-month forecasting models, and tests hypothetical commodity and currency shocks against a procurement budget.
 
 This is an independent portfolio project. It does not establish local food inflation, predict hunger, identify the cause of a price shock or demonstrate realized savings.
+
+**Audit and sharing:** [Issues and fixes](docs/AUDIT_AND_FIXES.md) · [LinkedIn post and carousel script](docs/LAUNCH_CONTENT.md) · [Source metadata](data/raw/source_metadata.json)
 
 **Explore:** [Findings and proposed actions](docs/PROJECT_REPORT.md) · [Excel workbook](FOODSHOCK_Analysis.xlsx) · [Dashboard file](FOODSHOCK_Dashboard.html) · [Power BI build guide](powerbi/BUILD_GUIDE.md) · [Validation evidence](docs/VALIDATION.md)
 
@@ -27,7 +33,9 @@ The project contains 2,568 commodity-month observations from January 2000 throug
 4. Open **foodshock.sqlite** in a SQLite browser, or use Python's built-in sqlite3. Inspect the SQL views and queries in sql/analysis.sql.
 5. Follow **powerbi/BUILD_GUIDE.md** to assemble the Power BI version using the supplied Power Query, DAX, theme and report-page specification.
 
-**Delivery boundary:** the HTML dashboard is implemented and its JavaScript interactions are tested. Browser screenshot/render testing could not be completed because a browser binary was unavailable. Excel was rendered and inspected. Power BI Desktop is unavailable in this environment; Power BI assets are a build kit, not an executed/tested .pbix.
+**Validation:** the Python rebuild and 10 regression tests pass on Windows and Linux. Chromium desktop/mobile smoke checks cover navigation, scenario validation, a real CSV download, page errors and mobile overflow. See the [verified workflow run](https://github.com/purushotmanmooper96-bit/foodshock-global-food-price-intelligence/actions/runs/39495977933) and [validation evidence](docs/VALIDATION.md).
+
+**Delivery boundary:** Power BI assets are a build kit, not a completed .pbix. The Excel file is a snapshot with documented manual refresh steps. Browser smoke checks do not establish pixel-perfect appearance or every-browser compatibility.
 
 ## Tool responsibilities
 
@@ -56,7 +64,7 @@ The project contains 2,568 commodity-month observations from January 2000 throug
 
 Use a Python environment compatible with the packages in requirements.txt. Python 3.11–3.13 is a practical choice; this build was tested with the supplied runtime, as recorded in docs/VALIDATION.md.
 
-Windows PowerShell, from the extracted FOODSHOCK folder:
+Windows PowerShell, from the project folder (Code > Download ZIP and extract it, or clone this repository):
 
 ```powershell
 py -0p
@@ -75,7 +83,7 @@ Optional JavaScript checks if Node.js is installed:
 node tests\test_dashboard.cjs
 ```
 
-The pipeline operates on the included snapshot and does not download data automatically. To update, download the current monthly workbook from the source page, archive your old snapshot, replace data/raw/worldbank_monthly.xlsx and inspect series/units/update date. Update the source URL/date metadata in pipeline.py, run the pipeline and tests, then refresh Power BI. Record revisions in your project changelog. Revisions to historical values can change backtest results.
+The pipeline operates on the included snapshot and does not download data automatically. To update, download the current monthly workbook from the source page, archive your old snapshot, replace data/raw/worldbank_monthly.xlsx and inspect series/units/update date. Update data/raw/source_metadata.json with the verified source URL, source update/retrieval dates and the new workbook SHA-256, then run the pipeline and tests and refresh Power BI. The pipeline rejects a changed file whose hash or update label disagrees with the metadata. Record revisions in your project changelog. Revisions to historical values can change backtest results.
 
 **Excel refresh:** this delivered workbook is a snapshot. Editing existing History values updates its formula-linked summaries and charts. Forecasts are imported model results, not Excel retraining. To refresh them, copy the rebuilt model_metrics results into Forecasts with the same row layout and the matching next-month forecasts into column H. Adding months also requires extending the History table and updating the Overview last-month, prior-month/prior-year and chart references. Do not present it as an automatic Excel refresh.
 
@@ -104,6 +112,10 @@ docs/                       Findings, data dictionary and validation evidence
 
 ## Present it honestly
 
-“I built a global food-price analytics project using Excel, SQL and Python, with Power BI import and report assets. It normalizes 2,568 observations, compares forecasting methods on separate time periods, monitors unusual price changes and tests procurement-budget scenarios. The analysis exposed cases where simpler forecasts outperform regression.”
+“I built an independent global food-price analytics project using Excel, SQL and Python, with Power BI import and report assets. It normalizes 2,568 observations, compares forecasting methods on separate time periods, monitors unusual price changes and tests procurement-budget scenarios. The analysis exposed cases where simpler forecasts outperform regression.”
 
 Once the Desktop report is assembled and validated, change the Power BI wording to describe the actual completed report. Keep this project separate from employment responsibilities on your resume. Do not claim measured cost savings, production deployment, real-time feeds or country-level coverage.
+
+## Audit validation
+
+The October 2026 review independently reconciled all 2,568 observations and executed expanded JavaScript logic checks, the Windows/Linux Python test matrix and Chromium desktop/mobile smoke checks. [Inspect the verified run](https://github.com/purushotmanmooper96-bit/foodshock-global-food-price-intelligence/actions/runs/39495977933); its tested code is commit 0beebc0056f81050d975ec219f40f49b502d937c. See [audit findings](docs/AUDIT_AND_FIXES.md) for remaining boundaries.

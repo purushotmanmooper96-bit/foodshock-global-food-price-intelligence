@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+<title id="title">Cocoa prices fell 15.8% but remained 149.7% above the 2020 average</title>
+<desc id="desc">World Bank benchmark prices in nominal US dollars. September 2026 year-on-year change and comparison with the 2020 monthly average.</desc>
+<rect width="1200" height="630" fill="#080F1D"/><rect x="54" y="48" width="6" height="530" fill="#56DFBF"/>
+<g font-family="Arial, sans-serif">
+<text x="86" y="78" font-size="20" font-weight="700" letter-spacing="3" fill="#56DFBF">FOODSHOCK</text>
+<text x="1110" y="78" font-size="17" text-anchor="end" fill="#98ABC6">WORLD BANK SNAPSHOT · SEPTEMBER 2026</text>
+<text x="86" y="157" font-size="52" font-weight="700" fill="#E9EFF9">Cocoa prices fell 15.8%.</text>
+<text x="86" y="221" font-size="44" font-weight="700" fill="#56DFBF">Still 149.7% above 2020.</text>
+<text x="86" y="269" font-size="20" fill="#98ABC6">Year-on-year direction and historical price level tell different stories.</text>
+<text x="86" y="343" font-size="19" fill="#E9EFF9">2020 average</text><rect x="290" y="315" width="284" height="42" rx="6" fill="#405875"/><text x="589" y="343" font-size="21" fill="#E9EFF9">100.0</text>
+<text x="86" y="411" font-size="19" fill="#E9EFF9">September 2026</text><rect x="290" y="383" width="709.2" height="42" rx="6" fill="#66B5FF"/><text x="1097" y="411" text-anchor="end" font-size="21" fill="#E9EFF9">249.7</text>
+<text x="290" y="465" font-size="17" fill="#98ABC6">Price index · 2020 average = 100 · bars start at zero</text>
+<line x1="86" y1="510" x2="1110" y2="510" stroke="#263750"/>
+<text x="86" y="548" font-size="18" fill="#E9EFF9">8 benchmarks · 2,568 monthly observations · Excel, SQL and Python</text>
+<text x="86" y="579" font-size="15" fill="#98ABC6">Nominal USD benchmarks, not local retail inflation. Power BI build kit included.</text>
+</g></svg>

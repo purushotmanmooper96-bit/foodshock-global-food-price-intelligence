@@ -1,0 +1,55 @@
+name: Validate FOODSHOCK
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      PYTHONUTF8: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install analysis dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Rebuild from the verified snapshot
+        run: python python/pipeline.py
+      - name: Run Python regression checks
+        run: python -m unittest discover -s tests -v
+      - name: Run dashboard interaction checks
+        run: node tests/test_dashboard.cjs
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test dependency
+        run: npm install --no-save playwright
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Test actual dashboard and capture views
+        run: node tests/browser_smoke.cjs
+      - name: Save dashboard captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-browser-captures
+          path: artifacts/
+          retention-days: 7

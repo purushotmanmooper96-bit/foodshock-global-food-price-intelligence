@@ -5,9 +5,28 @@ import numpy as np
 import pandas as pd
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'python'))
-from pipeline import predict, scenario, load_prices
+from pipeline import predict, scenario, load_prices, source_metadata, shock_scores
 
 class TestFoodshock(unittest.TestCase):
+    def test_scenario_rejects_nonfinite_inputs(self):
+        for values in [(float('nan'),.2,.1,.6),(1,float('inf'),.1,.6),
+                       (1,.2,float('nan'),.6),(1,.2,.1,float('inf')),(1e308,1e308,.1,.6)]:
+            with self.subTest(values=values), self.assertRaises(ValueError):
+                scenario(*values)
+
+    def test_unknown_model_and_short_history(self):
+        for model, origin in [('unknown',50),('Ridge lags',12),('Seasonal naive',11)]:
+            with self.subTest(model=model), self.assertRaises(ValueError):
+                predict(np.arange(60,dtype=float),origin,model)
+
+    def test_zero_variance_shocks_are_unavailable(self):
+        self.assertTrue(shock_scores(pd.Series(np.zeros(100))).isna().all())
+
+    def test_snapshot_metadata_matches_bytes(self):
+        metadata=source_metadata()
+        self.assertRegex(metadata['snapshot_sha256'],r'^[0-9a-f]{64}$')
+        self.assertLessEqual(metadata['source_updated'],metadata['retrieved_on'])
+
     def test_source_units(self):
         df=load_prices()
         sugar=df.query("commodity=='Sugar'").iloc[-1]
