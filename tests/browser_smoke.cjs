@@ -38,6 +38,7 @@ const {pathToFileURL}=require('node:url');
   await page.screenshot({path:'artifacts/overview-mobile.png',fullPage:true});
   assert(await page.locator('#commodity').isVisible());
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth+2);
+  if(overflow)console.log('Overflow diagnostics',await page.evaluate(()=>Array.from(document.querySelectorAll('body *')).map(e=>({tag:e.tagName,id:e.id,class:e.className,right:e.getBoundingClientRect().right,width:e.getBoundingClientRect().width})).filter(e=>e.right>innerWidth+2).slice(0,25)));
   assert.equal(overflow,false,'Unexpected whole-page horizontal overflow on mobile');
   assert.deepEqual(errors,[]);
   console.log('PASS: Chromium desktop/mobile smoke, 4 pages, scenario validation, native CSV download and zero page errors.');
