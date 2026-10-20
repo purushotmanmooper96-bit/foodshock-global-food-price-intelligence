@@ -1,0 +1,73 @@
+// Each declaration below is a SEPARATE New table or New measure operation.
+// CALCULATED TABLES (Modeling > New table):
+Calendar = CALENDAR(MIN(prices[date]), EDATE(MAX(prices[date]),1))
+
+Shock = GENERATESERIES(-0.40,0.80,0.01)
+
+FX = GENERATESERIES(-0.20,0.50,0.01)
+
+PassThrough = GENERATESERIES(0,1,0.01)
+
+Spend = GENERATESERIES(0,10000000,100000)
+
+// MEASURES (Modeling > New measure):
+Price USD per mt = IF(HASONEVALUE(dim_commodity[commodity]), AVERAGE(prices[price_usd_mt]))
+
+Index 2020 = IF(HASONEVALUE(dim_commodity[commodity]), AVERAGE(prices[index_2020]))
+
+Selected month = MAX(prices[date])
+
+Latest price =
+VAR LastDate = [Selected month]
+RETURN IF(HASONEVALUE(dim_commodity[commodity]),
+    CALCULATE(AVERAGE(prices[price_usd_mt]), REMOVEFILTERS(Calendar), prices[date]=LastDate))
+
+Latest YoY =
+VAR LastDate = [Selected month]
+RETURN IF(HASONEVALUE(dim_commodity[commodity]),
+    CALCULATE(AVERAGE(prices[yoy]), REMOVEFILTERS(Calendar), prices[date]=LastDate))
+
+Latest MoM =
+VAR LastDate = [Selected month]
+RETURN IF(HASONEVALUE(dim_commodity[commodity]),
+    CALCULATE(AVERAGE(prices[mom]), REMOVEFILTERS(Calendar), prices[date]=LastDate))
+
+Latest index =
+VAR LastDate = [Selected month]
+RETURN IF(HASONEVALUE(dim_commodity[commodity]),
+    CALCULATE(AVERAGE(prices[index_2020]), REMOVEFILTERS(Calendar), prices[date]=LastDate))
+
+Latest shock Z =
+VAR LastDate = [Selected month]
+RETURN IF(HASONEVALUE(dim_commodity[commodity]),
+    CALCULATE(AVERAGE(prices[shock_z]), REMOVEFILTERS(Calendar), prices[date]=LastDate))
+
+Shock signal =
+VAR Z = [Latest shock Z]
+RETURN IF(ISBLANK(Z),BLANK(),IF(Z>=2,"Upward shock",IF(Z<=-2,"Downward shock","Normal")))
+
+Next forecast = IF(HASONEVALUE(dim_commodity[commodity]),CALCULATE(MAX(forecasts[forecast]),REMOVEFILTERS(Calendar)))
+
+Lower band = IF(HASONEVALUE(dim_commodity[commodity]),CALCULATE(MAX(forecasts[lower80]),REMOVEFILTERS(Calendar)))
+
+Upper band = IF(HASONEVALUE(dim_commodity[commodity]),CALCULATE(MAX(forecasts[upper80]),REMOVEFILTERS(Calendar)))
+
+Test MAPE = IF(HASONEVALUE(dim_commodity[commodity]),CALCULATE(MAX(model_metrics[test_mape]),model_metrics[selected]=1))
+
+Test band coverage = IF(HASONEVALUE(dim_commodity[commodity]),CALCULATE(MAX(model_metrics[test_interval_coverage]),model_metrics[selected]=1))
+
+Actual test price = IF(HASONEVALUE(dim_commodity[commodity]),AVERAGE(backtest[actual]))
+
+Predicted test price = IF(HASONEVALUE(dim_commodity[commodity]),AVERAGE(backtest[prediction]))
+
+Baseline spend = SELECTEDVALUE(Spend[Value],1000000)
+
+Stressed spend = [Baseline spend]*(1+SELECTEDVALUE(Shock[Value],0.20)*SELECTEDVALUE(PassThrough[Value],0.60))*(1+SELECTEDVALUE(FX[Value],0.10))
+
+Additional budget = [Stressed spend]-[Baseline spend]
+
+Budget change = DIVIDE([Additional budget],[Baseline spend])
+
+// Formatting: YoY, MoM, MAPE, coverage and Budget change: 0.0%.
+// Price / forecast / budget: #,##0.0; index: 0.0; z-score: 0.00.
+// Price and index grand totals intentionally blank across commodities.

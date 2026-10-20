@@ -1,0 +1,9 @@
+commodity,category,source_series,source_unit,conversion_factor
+Cocoa,Soft commodities,Cocoa,($/kg),1000
+Maize,Grains,Maize,($/mt),1
+Palm oil,Oils,Palm oil,($/mt),1
+Rice,Grains,"Rice, Thai 5%",($/mt),1
+Soybean oil,Oils,Soybean oil,($/mt),1
+Soybeans,Oilseeds,Soybeans,($/mt),1
+Sugar,Soft commodities,"Sugar, world",($/kg),1000
+Wheat,Grains,"Wheat, US HRW",($/mt),1
